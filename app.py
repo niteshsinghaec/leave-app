@@ -4,18 +4,21 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
+import os
+import urllib.request
 
-# Imports for PDF Generation
+# Imports for PDF Generation with Font Support
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 st.set_page_config(page_title="Leave App", page_icon="📄", layout="centered")
 
 st.title("🛡️ Officers Leave App")
-st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** format.")
+st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** (Bilingual Hindi & English).")
 
 # Form inputs
 with st.form("leave_form"):
@@ -151,8 +154,28 @@ if submitted:
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE PDF FILE
+    # 2. GENERATE BILINGUAL PDF FILE
     # ==========================================
+    # Download Hindi-supported font automatically if not cached
+    font_path = "/tmp/NotoSansDevanagari.ttf"
+    if not os.path.exists(font_path):
+        try:
+            url = "https://github.com/google/fonts/raw/true/ofl/notosansdevanagari/NotoSansDevanagari-Regular.ttf"
+            urllib.request.urlretrieve(url, font_path)
+        except Exception:
+            # Fallback direct link
+            try:
+                url_alt = "https://github.com/google/fonts/raw/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf"
+                urllib.request.urlretrieve(url_alt, font_path)
+            except Exception:
+                pass
+
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont('HindiFont', font_path))
+        font_name = 'HindiFont'
+    else:
+        font_name = 'Helvetica'
+
     pdf_bio = io.BytesIO()
     pdf_doc = SimpleDocTemplate(
         pdf_bio,
@@ -164,44 +187,48 @@ if submitted:
     )
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=12, alignment=1, spaceAfter=2)
-    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=10)
-    body_bold = ParagraphStyle('BodyBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, spaceAfter=6)
-    center_bold = ParagraphStyle('CenterBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, spaceAfter=6)
-    right_bold = ParagraphStyle('RightBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=2, leading=13)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName=font_name, fontSize=12, alignment=1, spaceAfter=2)
+    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=8)
+    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName=font_name, fontSize=9.5, leading=13, spaceAfter=4)
+    center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName=font_name, fontSize=9.5, alignment=1, spaceAfter=4)
+    right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName=font_name, fontSize=9.5, alignment=2, leading=12)
 
     pdf_elements = []
 
     pdf_elements.append(Paragraph("अधिकारियों की छुट्टी के लिए आवेदनपत्र", title_style))
     pdf_elements.append(Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style))
 
-    pdf_elements.append(Paragraph(f"1. संख्या/रैंक और नाम:<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. Rank and Name :- {rank_name}", body_bold))
-    pdf_elements.append(Paragraph("2. यूनिट :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQAE(GS) Mumbai-83", body_bold))
-    pdf_elements.append(Paragraph(f"3. नियुक्ति :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Appoitment :- {appointment}", body_bold))
-    pdf_elements.append(Paragraph(f"4. ड्यूटी के लिए प्रबन्ध :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Arrangement for performance of duty : - {duty_text}", body_bold))
-    pdf_elements.append(Paragraph(f"5. शेष अधिकारियों की संख्या : -<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. of Officers remaining :- {rem_text}", body_bold))
+    pdf_elements.append(Paragraph(f"<b>1. संख्या/रैंक और नाम / No. Rank and Name :-</b> {rank_name}", body_style))
+    pdf_elements.append(Paragraph("<b>2. यूनिट / Unit :-</b> सामान्य भंडार खंड / SQAE(GS) Mumbai-83", body_style))
+    pdf_elements.append(Paragraph(f"<b>3. नियुक्ति / Appointment :-</b> {appointment}", body_style))
+    pdf_elements.append(Paragraph(f"<b>4. ड्यूटी के लिए प्रबन्ध / Arrangement for performance of duty :-</b> {duty_text}", body_style))
+    pdf_elements.append(Paragraph(f"<b>5. शेष अधिकारियों की संख्या / No. of Officers remaining :-</b> {rem_text}", body_style))
     
-    p6_text = f"6. वार्षिक / अर्जित / फरलों / बीमारी (Half Pay) / आकस्मिक / प्रतिबंधित / अर्धवेतन छुट्टी जिसके लिए आवेदन दिया गया है<br/>&nbsp;&nbsp;&nbsp;&nbsp;on : {f_date_str} &nbsp;&nbsp; To {t_date_str} &nbsp;&nbsp; No. of days : {no_days}<br/>&nbsp;&nbsp;&nbsp;&nbsp;तक के लिए (दिनों {no_days}) Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]"
-    pdf_elements.append(Paragraph(p6_text, body_bold))
+    p6_text = (f"<b>6. वार्षिक / अर्जित / फरलों / बीमारी / आकस्मिक छुट्टी के लिए आवेदन</b><br/>"
+               f"&nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>"
+               f"&nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]")
+    pdf_elements.append(Paragraph(p6_text, body_style))
 
-    pdf_elements.append(Paragraph(f"7. छुट्टी के दौरान पता : {address}", body_bold))
-    pdf_elements.append(Paragraph(f"8. कितने दिन की आकस्मिक छुट्टी ली :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_bold))
+    pdf_elements.append(Paragraph(f"<b>7. छुट्टी के दौरान पता / Address during leave :-</b> {address}", body_style))
+    pdf_elements.append(Paragraph(f"<b>8. कितने दिन की आकस्मिक छुट्टी ली / Days of Casual Leave availed :-</b> {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_style))
+
+    pdf_elements.append(Spacer(1, 4))
 
     # Section 9
     t9_data = [
-        [Paragraph(f"9. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
-         Paragraph("आवेदक के हस्ताक्षर<br/>Signature of Applicant<br/><br/>", right_bold)]
+        [Paragraph(f"<b>9. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+         Paragraph("<b>आवेदक के हस्ताक्षर<br/>Signature of Applicant</b><br/><br/>", right_style)]
     ]
     t9_pdf = Table(t9_data, colWidths=[3.6*inch, 3.4*inch])
     t9_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
     pdf_elements.append(t9_pdf)
 
-    pdf_elements.append(Paragraph("सिफ़ारिश की जाती है / Recommended", center_bold))
+    pdf_elements.append(Paragraph("<b>सिफ़ारिश की जाती है / Recommended</b>", center_style))
 
     # Section 10
     t10_data = [
-        [Paragraph(f"10. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
-         Paragraph("सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority<br/><br/>", right_bold)]
+        [Paragraph(f"<b>10. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+         Paragraph("<b>सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
     ]
     t10_pdf = Table(t10_data, colWidths=[3.6*inch, 3.4*inch])
     t10_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
@@ -209,8 +236,8 @@ if submitted:
 
     # Section 11
     t11_data = [
-        [Paragraph(f"11. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख:<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
-         Paragraph("मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned<br/><br/>", right_bold)]
+        [Paragraph(f"<b>11. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+         Paragraph("<b>मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned</b><br/><br/>", right_style)]
     ]
     t11_pdf = Table(t11_data, colWidths=[3.6*inch, 3.4*inch])
     t11_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
@@ -222,7 +249,7 @@ if submitted:
     # ==========================================
     # DISPLAY DOWNLOAD BUTTONS
     # ==========================================
-    st.success("✅ Leave application generated successfully in DOCX & PDF!")
+    st.success("✅ Leave application generated successfully in bilingual DOCX & PDF!")
     
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
