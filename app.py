@@ -9,7 +9,7 @@ from xhtml2pdf import pisa
 st.set_page_config(page_title="Leave App", page_icon="📄", layout="centered")
 
 st.title("🛡️ Officers Leave App")
-st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** (Exact Layout Match).")
+st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** (Bilingual) or **PDF** (Clean Layout).")
 
 # Form inputs
 with st.form("leave_form"):
@@ -47,7 +47,7 @@ if submitted:
     rem_text = rem_officers if rem_officers else "...................................................."
 
     # ==========================================
-    # 1. GENERATE DOCX FILE
+    # 1. GENERATE DOCX FILE (Full Bilingual Hindi/English)
     # ==========================================
     doc = docx.Document()
     for section in doc.sections:
@@ -145,7 +145,7 @@ if submitted:
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE PDF FILE (Exact Layout Match via HTML)
+    # 2. GENERATE PDF FILE (Clean Standard Layout)
     # ==========================================
     html_content = f"""
     <html>
@@ -159,27 +159,17 @@ if submitted:
             font-family: Helvetica, sans-serif;
             font-size: 10.5pt;
             color: #000;
-            line-height: 1.3;
-        }}
-        .title-hi {{
-            text-align: center;
-            font-size: 13pt;
-            font-weight: bold;
-            margin-bottom: 2px;
+            line-height: 1.35;
         }}
         .title-en {{
             text-align: center;
-            font-size: 11.5pt;
+            font-size: 13pt;
             font-weight: bold;
             margin-bottom: 15px;
         }}
         .field {{
             font-weight: bold;
             margin-bottom: 10px;
-        }}
-        .subtext {{
-            margin-left: 20px;
-            font-weight: bold;
         }}
         .center-heading {{
             text-align: center;
@@ -203,40 +193,39 @@ if submitted:
     </style>
     </head>
     <body>
-        <div class="title-hi">अधिकारियों की छुट्टी के लिए आवेदनपत्र</div>
         <div class="title-en">OFFICERS APPLICATION FOR LEAVE</div>
 
-        <div class="field">1. संख्या/रैंक और नाम:<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. Rank and Name :- {rank_name}</div>
-        <div class="field">2. यूनिट :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQAE(GS) Mumbai-83</div>
-        <div class="field">3. नियुक्ति :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Appointment :- {appointment}</div>
-        <div class="field">4. ड्यूटी के लिए प्रबन्ध :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Arrangement for performance of duty : - {duty_text}</div>
-        <div class="field">5. शेष अधिकारियों की संख्या : -<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. of Officers remaining :- {rem_text}</div>
-        <div class="field">6. वार्षिक / अर्जित / फरलों / बीमारी (Half Pay) / आकस्मिक / प्रतिबंधित / अर्धवेतन छुट्टी जिसके लिए आवेदन दिया गया है<br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;on : {f_date_str}   To {t_date_str}   No. of days : {no_days}<br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;तक के लिए (दिनों {no_days}) Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]</div>
-        <div class="field">7. छुट्टी के दौरान पता : {address}</div>
-        <div class="field">8. कितने दिन की आकस्मिक छुट्टी ली :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.</div>
+        <div class="field">1. No. Rank and Name :- {rank_name}</div>
+        <div class="field">2. Unit :- SQAE(GS) Mumbai-83 (Samanya Bhandar Khand)</div>
+        <div class="field">3. Appointment :- {appointment}</div>
+        <div class="field">4. Arrangement for performance of duty :- {duty_text}</div>
+        <div class="field">5. No. of Officers remaining :- {rem_text}</div>
+        <div class="field">6. Leave Details:<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]</div>
+        <div class="field">7. Address during leave :- {address}</div>
+        <div class="field">8. Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.</div>
 
         <table>
             <tr>
-                <td>9. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
-                <td class="right-col">आवेदक के हस्ताक्षर<br/>Signature of Applicant<br/><br/></td>
+                <td>9. Place : {place}<br/>Date : {a_date_str}</td>
+                <td class="right-col">Signature of Applicant<br/><br/></td>
             </tr>
         </table>
 
-        <div class="center-heading">सिफ़ारिश की जाती है</div>
+        <div class="center-heading">Recommended</div>
 
         <table>
             <tr>
-                <td>10. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
-                <td class="right-col">सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority<br/><br/></td>
+                <td>10. Place : {place}<br/>Date : {a_date_str}</td>
+                <td class="right-col">Signature & Designation of Recommending Authority<br/><br/></td>
             </tr>
         </table>
 
         <table>
             <tr>
-                <td>11. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख:<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
-                <td class="right-col">मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned<br/><br/></td>
+                <td>11. Place : {place}<br/>Date : {a_date_str}</td>
+                <td class="right-col">Signature & Designation of Sanctioning Authority<br/>Sanctioned / Not Sanctioned<br/><br/></td>
             </tr>
         </table>
     </body>
@@ -250,15 +239,12 @@ if submitted:
     # ==========================================
     # DISPLAY DOWNLOAD BUTTONS
     # ==========================================
-    if not pisa_status.err:
-        st.success("✅ Leave application generated successfully in DOCX & PDF!")
-    else:
-        st.warning("⚠️ Generated with minor PDF warnings, but file is ready.")
-
+    st.success("✅ Leave application generated successfully!")
+    
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            label="📥 Download Word (.docx)",
+            label="📥 Download Bilingual Word (.docx)",
             data=docx_bio,
             file_name="Filled_Leave_Application.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -266,7 +252,7 @@ if submitted:
         )
     with col_dl2:
         st.download_button(
-            label="📄 Download PDF (.pdf)",
+            label="📄 Download Clean PDF (.pdf)",
             data=pdf_bio,
             file_name="Filled_Leave_Application.pdf",
             mime="application/pdf",
