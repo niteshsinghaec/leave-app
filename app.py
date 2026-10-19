@@ -10,7 +10,7 @@ import urllib.request
 # Imports for PDF Generation with Font Support
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -154,7 +154,7 @@ if submitted:
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE BILINGUAL PDF FILE (Full-Page Layout)
+    # 2. GENERATE BILINGUAL PDF FILE (Full-Page Stretched Layout)
     # ==========================================
     font_path = "/tmp/NotoSansDevanagari.ttf"
     if not os.path.exists(font_path):
@@ -185,67 +185,53 @@ if submitted:
     )
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName=font_name, fontSize=12, alignment=1, spaceAfter=1)
-    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=10)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName=font_name, fontSize=12, alignment=1, spaceAfter=2)
+    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=8)
     
-    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, leading=14, spaceAfter=8)
-    center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=1, spaceAfter=8)
+    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, leading=15, spaceAfter=6)
+    center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=1, spaceAfter=6)
     right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=2, leading=13)
 
-    pdf_elements = []
-
-    pdf_elements.append(Paragraph("अधिकारियों की छुट्टी के लिए आवेदनपत्र", title_style))
-    pdf_elements.append(Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style))
-
-    pdf_elements.append(Paragraph(f"<b>1. संख्या/रैंक और नाम / No. Rank and Name :-</b> {rank_name}", body_style))
-    pdf_elements.append(Paragraph("<b>2. यूनिट / Unit :-</b> सामान्य भंडार खंड / SQAE(GS) Mumbai-83", body_style))
-    pdf_elements.append(Paragraph(f"<b>3. नियुक्ति / Appointment :-</b> {appointment}", body_style))
-    pdf_elements.append(Paragraph(f"<b>4. ड्यूटी के लिए प्रबन्ध / Arrangement for performance of duty :-</b> {duty_text}", body_style))
-    pdf_elements.append(Paragraph(f"<b>5. शेष अधिकारियों की संख्या / No. of Officers remaining :-</b> {rem_text}", body_style))
-    
-    p6_text = (f"<b>6. वार्षिक / अर्जित / फरलों / बीमारी / आकस्मिक छुट्टी के लिए आवेदन</b><br/>"
-               f"&nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>"
-               f"&nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]")
-    pdf_elements.append(Paragraph(p6_text, body_style))
-
-    pdf_elements.append(Paragraph(f"<b>7. छुट्टी के दौरान पता / Address during leave :-</b> {address}", body_style))
-    pdf_elements.append(Paragraph(f"<b>8. कितने दिन की आकस्मिक छुट्टी ली / Days of Casual Leave availed :-</b> {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_style))
-
-    pdf_elements.append(Spacer(1, 10))
-
-    # Section 9
-    t9_data = [
-        [Paragraph(f"<b>9. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-         Paragraph("<b>आवेदक के हस्ताक्षर<br/>Signature of Applicant</b><br/><br/>", right_style)]
+    content_rows = [
+        [Paragraph("अधिकारियों की छुट्टी के लिए आवेदनपत्र", title_style)],
+        [Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style)],
+        [Paragraph(f"<b>1. संख्या/रैंक और नाम / No. Rank and Name :-</b> {rank_name}", body_style)],
+        [Paragraph("<b>2. यूनिट / Unit :-</b> सामान्य भंडार खंड / SQAE(GS) Mumbai-83", body_style)],
+        [Paragraph(f"<b>3. नियुक्ति / Appointment :-</b> {appointment}", body_style)],
+        [Paragraph(f"<b>4. ड्यूटी के लिए प्रबन्ध / Arrangement for performance of duty :-</b> {duty_text}", body_style)],
+        [Paragraph(f"<b>5. शेष अधिकारियों की संख्या / No. of Officers remaining :-</b> {rem_text}", body_style)],
+        [Paragraph(f"<b>6. वार्षिक / अर्जित / फरलों / बीमारी / आकस्मिक छुट्टी के लिए आवेदन</b><br/>"
+                   f"&nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>"
+                   f"&nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]", body_style)],
+        [Paragraph(f"<b>7. छुट्टी के दौरान पता / Address during leave :-</b> {address}", body_style)],
+        [Paragraph(f"<b>8. कितने दिन की आकस्मिक छुट्टी ली / Days of Casual Leave availed :-</b> {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_style)],
+        
+        [Table([
+            [Paragraph(f"<b>9. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>आवेदक के हस्ताक्षर<br/>Signature of Applicant</b><br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
+        
+        [Paragraph("<b>सिफ़ारिश की जाती है / Recommended</b>", center_style)],
+        
+        [Table([
+            [Paragraph(f"<b>10. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
+        
+        [Table([
+            [Paragraph(f"<b>11. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned</b><br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
     ]
-    t9_pdf = Table(t9_data, colWidths=[3.6*inch, 3.4*inch])
-    t9_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    pdf_elements.append(t9_pdf)
 
-    pdf_elements.append(Spacer(1, 4))
-    pdf_elements.append(Paragraph("<b>सिफ़ारिश की जाती है / Recommended</b>", center_style))
-    pdf_elements.append(Spacer(1, 4))
+    full_page_table = Table(content_rows, colWidths=[7.0*inch], rowHeights=None)
+    full_page_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+    ]))
 
-    # Section 10
-    t10_data = [
-        [Paragraph(f"<b>10. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-         Paragraph("<b>सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
-    ]
-    t10_pdf = Table(t10_data, colWidths=[3.6*inch, 3.4*inch])
-    t10_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    pdf_elements.append(t10_pdf)
-
-    pdf_elements.append(Spacer(1, 6))
-
-    # Section 11
-    t11_data = [
-        [Paragraph(f"<b>11. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-         Paragraph("<b>मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned</b><br/><br/>", right_style)]
-    ]
-    t11_pdf = Table(t11_data, colWidths=[3.6*inch, 3.4*inch])
-    t11_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
-    pdf_elements.append(t11_pdf)
-
+    pdf_elements = [full_page_table]
     pdf_doc.build(pdf_elements)
     pdf_bio.seek(0)
 
