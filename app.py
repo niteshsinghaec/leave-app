@@ -4,12 +4,17 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
-from xhtml2pdf import pisa
+
+# Imports for precision PDF Generation
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 st.set_page_config(page_title="Leave App", page_icon="📄", layout="centered")
 
 st.title("🛡️ Officers Leave App")
-st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** (Bilingual) or **PDF** (Clean Layout).")
+st.write("Fill in your details below and download your single-page formatted leave application instantly in **Word** or **PDF** format.")
 
 # Form inputs
 with st.form("leave_form"):
@@ -47,7 +52,7 @@ if submitted:
     rem_text = rem_officers if rem_officers else "...................................................."
 
     # ==========================================
-    # 1. GENERATE DOCX FILE (Full Bilingual Hindi/English)
+    # 1. GENERATE DOCX FILE
     # ==========================================
     doc = docx.Document()
     for section in doc.sections:
@@ -145,95 +150,55 @@ if submitted:
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE PDF FILE (Clean Standard Layout)
+    # 2. GENERATE PDF FILE (Clean Structured Layout)
     # ==========================================
-    html_content = f"""
-    <html>
-    <head>
-    <style>
-        @page {{
-            size: A4;
-            margin: 0.5in;
-        }}
-        body {{
-            font-family: Helvetica, sans-serif;
-            font-size: 10.5pt;
-            color: #000;
-            line-height: 1.35;
-        }}
-        .title-en {{
-            text-align: center;
-            font-size: 13pt;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }}
-        .field {{
-            font-weight: bold;
-            margin-bottom: 10px;
-        }}
-        .center-heading {{
-            text-align: center;
-            font-weight: bold;
-            margin: 12px 0;
-        }}
-        table {{
-            width: 100%;
-            margin-top: 8px;
-            margin-bottom: 8px;
-            border-collapse: collapse;
-        }}
-        td {{
-            vertical-align: top;
-            font-weight: bold;
-            font-size: 10pt;
-        }}
-        .right-col {{
-            text-align: right;
-        }}
-    </style>
-    </head>
-    <body>
-        <div class="title-en">OFFICERS APPLICATION FOR LEAVE</div>
-
-        <div class="field">1. No. Rank and Name :- {rank_name}</div>
-        <div class="field">2. Unit :- SQAE(GS) Mumbai-83 (Samanya Bhandar Khand)</div>
-        <div class="field">3. Appointment :- {appointment}</div>
-        <div class="field">4. Arrangement for performance of duty :- {duty_text}</div>
-        <div class="field">5. No. of Officers remaining :- {rem_text}</div>
-        <div class="field">6. Leave Details:<br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]</div>
-        <div class="field">7. Address during leave :- {address}</div>
-        <div class="field">8. Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.</div>
-
-        <table>
-            <tr>
-                <td>9. Place : {place}<br/>Date : {a_date_str}</td>
-                <td class="right-col">Signature of Applicant<br/><br/></td>
-            </tr>
-        </table>
-
-        <div class="center-heading">Recommended</div>
-
-        <table>
-            <tr>
-                <td>10. Place : {place}<br/>Date : {a_date_str}</td>
-                <td class="right-col">Signature & Designation of Recommending Authority<br/><br/></td>
-            </tr>
-        </table>
-
-        <table>
-            <tr>
-                <td>11. Place : {place}<br/>Date : {a_date_str}</td>
-                <td class="right-col">Signature & Designation of Sanctioning Authority<br/>Sanctioned / Not Sanctioned<br/><br/></td>
-            </tr>
-        </table>
-    </body>
-    </html>
-    """
-
     pdf_bio = io.BytesIO()
-    pisa_status = pisa.CreatePDF(io.BytesIO(html_content.encode("utf-8")), dest=pdf_bio)
+    pdf_doc = SimpleDocTemplate(
+        pdf_bio,
+        pagesize=A4,
+        rightMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        topMargin=0.4*inch,
+        bottomMargin=0.4*inch
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=12, alignment=1, spaceAfter=2)
+    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=10)
+    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=14, spaceAfter=5)
+    center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, spaceAfter=6)
+    right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, alignment=2, leading=13)
+
+    pdf_elements = [
+        Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style),
+        Paragraph(f"<b>1. No. Rank and Name :-</b> {rank_name}", body_style),
+        Paragraph("<b>2. Unit :-</b> सामान्य भंडार खंड / SQAE(GS) Mumbai-83", body_style),
+        Paragraph(f"<b>3. Appointment :-</b> {appointment}", body_style),
+        Paragraph(f"<b>4. Arrangement for performance of duty :-</b> {duty_text}", body_style),
+        Paragraph(f"<b>5. No. of Officers remaining :-</b> {rem_text}", body_style),
+        Paragraph(f"<b>6. Leave Details:</b><br/>&nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]", body_style),
+        Paragraph(f"<b>7. Address during leave :-</b> {address}", body_style),
+        Paragraph(f"<b>8. Days of Casual Leave availed :-</b> {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_style),
+        Spacer(1, 4),
+        Table([
+            [Paragraph(f"<b>9. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>Signature of Applicant</b><br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')]),
+        Spacer(1, 4),
+        Paragraph("<b>Recommended</b>", center_style),
+        Spacer(1, 4),
+        Table([
+            [Paragraph(f"<b>10. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')]),
+        Spacer(1, 4),
+        Table([
+            [Paragraph(f"<b>11. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
+             Paragraph("<b>Signature & Designation of Sanctioning Authority</b><br/>Sanctioned / Not Sanctioned<br/><br/>", right_style)]
+        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])
+    ]
+
+    pdf_doc.build(pdf_elements)
     pdf_bio.seek(0)
 
     # ==========================================
@@ -244,7 +209,7 @@ if submitted:
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            label="📥 Download Bilingual Word (.docx)",
+            label="📥 Download Word (.docx)",
             data=docx_bio,
             file_name="Filled_Leave_Application.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -252,10 +217,10 @@ if submitted:
         )
     with col_dl2:
         st.download_button(
-            label="📄 Download Clean PDF (.pdf)",
+            label="📄 Download PDF (.pdf)",
             data=pdf_bio,
             file_name="Filled_Leave_Application.pdf",
             mime="application/pdf",
             use_container_width=True
-        )
-        
+    )
+    
