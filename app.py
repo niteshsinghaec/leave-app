@@ -17,7 +17,7 @@ st.write("Fill in your details below and download your single-page formatted lea
 
 with st.form("leave_form"):
     rank_name = st.text_input("Rank and Name", "NITESH SINGH, AE(QA)")
-    appointment = st.text_input("Appointment", "सहायक अभियंता (गु.आ) / Assistant Engineer (QA)")
+    appointment = st.text_input("Appointment", "Assistant Engineer (QA)")
     duty_arr = st.text_input("Duty Arrangement (leave blank if none)", "")
     rem_officers = st.text_input("Officers Remaining (leave blank if none)", "")
     
@@ -50,7 +50,7 @@ if submitted:
     rem_text = rem_officers if rem_officers else "...................................................."
 
     # ==========================================
-    # 1. GENERATE DOCX FILE
+    # 1. GENERATE DOCX FILE (Bilingual)
     # ==========================================
     doc = docx.Document()
     for section in doc.sections:
@@ -85,9 +85,7 @@ if submitted:
     add_p(f"3. नियुक्ति :\n    Appoitment :- {appointment}", bold=True, space_after=6)
     add_p(f"4. ड्यूटी के लिए प्रबन्ध :\n    Arrangement for performance of duty : - {duty_text}", bold=True, space_after=6)
     add_p(f"5. शेष अधिकारियों की संख्या : -\n    No. of Officers remaining :- {rem_text}", bold=True, space_after=6)
-    
     add_p(f"6. Leave Details:\n    From : {f_date_str}   To : {t_date_str}   No. of Days : {no_days}\n    Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]", bold=True, space_after=6)
-
     add_p(f"7. छुट्टी के दौरान पता / Address during leave : {address}", bold=True, space_after=6)
     add_p(f"8. Days of Casual Leave availed :- {cl_availed}\n    Station leave permission may please be granted.", bold=True, space_after=10)
 
@@ -97,14 +95,10 @@ if submitted:
     t9.columns[0].width = Inches(3.5)
     t9.columns[1].width = Inches(3.2)
     
-    p9_l = t9.rows[0].cells[0].paragraphs[0]
-    p9_l.paragraph_format.space_after = Pt(2)
-    p9_l.add_run(f"9. Place : {place}    Date : {a_date_str}").bold = True
-
-    p9_r = t9.rows[0].cells[1].paragraphs[0]
-    p9_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p9_r.paragraph_format.space_after = Pt(2)
-    p9_r.add_run("Signature of Applicant\n\n").bold = True
+    t9.rows[0].cells[0].paragraphs[0].add_run(f"9. Place : {place}    Date : {a_date_str}").bold = True
+    r9 = t9.rows[0].cells[1].paragraphs[0]
+    r9.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r9.add_run("Signature of Applicant\n\n").bold = True
 
     add_p("Recommended / सिफ़ारिश की जाती है", bold=True, space_after=6, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=11)
 
@@ -113,37 +107,27 @@ if submitted:
     t10.autofit = False
     t10.columns[0].width = Inches(3.5)
     t10.columns[1].width = Inches(3.2)
-
-    p10_l = t10.rows[0].cells[0].paragraphs[0]
-    p10_l.paragraph_format.space_after = Pt(2)
-    p10_l.add_run(f"10. Place : {place}    Date : {a_date_str}").bold = True
-
-    p10_r = t10.rows[0].cells[1].paragraphs[0]
-    p10_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p10_r.paragraph_format.space_after = Pt(2)
-    p10_r.add_run("Signature & Designation of Recommending Authority\n\n").bold = True
+    t10.rows[0].cells[0].paragraphs[0].add_run(f"10. Place : {place}    Date : {a_date_str}").bold = True
+    r10 = t10.rows[0].cells[1].paragraphs[0]
+    r10.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r10.add_run("Signature & Designation of Recommending Authority\n\n").bold = True
 
     t11 = doc.add_table(rows=1, cols=2)
     t11.alignment = WD_TABLE_ALIGNMENT.CENTER
     t11.autofit = False
     t11.columns[0].width = Inches(3.2)
     t11.columns[1].width = Inches(3.5)
-
-    p11_l = t11.rows[0].cells[0].paragraphs[0]
-    p11_l.paragraph_format.space_after = Pt(2)
-    p11_l.add_run(f"11. Place : {place}    Date : {a_date_str}").bold = True
-
-    p11_r = t11.rows[0].cells[1].paragraphs[0]
-    p11_r.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    p11_r.paragraph_format.space_after = Pt(2)
-    p11_r.add_run("Signature & Designation of Sanctioning Authority\nSanctioned / Not Sanctioned\n\n").bold = True
+    t11.rows[0].cells[0].paragraphs[0].add_run(f"11. Place : {place}    Date : {a_date_str}").bold = True
+    r11 = t11.rows[0].cells[1].paragraphs[0]
+    r11.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    r11.add_run("Signature & Designation of Sanctioning Authority\nSanctioned / Not Sanctioned\n\n").bold = True
 
     docx_bio = io.BytesIO()
     doc.save(docx_bio)
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE PDF FILE (Precise Sequential Layout)
+    # 2. GENERATE PDF FILE (Clean Single-Table Layout)
     # ==========================================
     pdf_bio = io.BytesIO()
     pdf_doc = SimpleDocTemplate(
@@ -156,14 +140,13 @@ if submitted:
     )
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=12, alignment=1, spaceAfter=2)
-    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=10)
-    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=14, spaceAfter=6)
+    title_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=8)
+    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, leading=13, spaceAfter=5)
     center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, spaceAfter=6)
-    right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, alignment=2, leading=13)
+    right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9.5, alignment=2, leading=12)
 
     pdf_elements = [
-        Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style),
+        Paragraph("OFFICERS APPLICATION FOR LEAVE", title_style),
         Paragraph(f"<b>1. No. Rank and Name :-</b> {rank_name}", body_style),
         Paragraph("<b>2. Unit :-</b> SQAE(GS) Mumbai-83 (Samanya Bhandar Khand)", body_style),
         Paragraph(f"<b>3. Appointment :-</b> {appointment}", body_style),
@@ -172,19 +155,19 @@ if submitted:
         Paragraph(f"<b>6. Leave Details:</b><br/>From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]", body_style),
         Paragraph(f"<b>7. Address during leave :-</b> {address}", body_style),
         Paragraph(f"<b>8. Days of Casual Leave availed :-</b> {cl_availed}<br/>Station leave permission may please be granted.", body_style),
-        Spacer(1, 6),
+        Spacer(1, 4),
         Table([
             [Paragraph(f"<b>9. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
              Paragraph("<b>Signature of Applicant</b><br/><br/>", right_style)]
         ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')]),
-        Spacer(1, 6),
-        Paragraph("<b>Recommended / सिफ़ारिश की जाती है</b>", center_style),
-        Spacer(1, 6),
+        Spacer(1, 4),
+        Paragraph("<b>Recommended</b>", center_style),
+        Spacer(1, 4),
         Table([
             [Paragraph(f"<b>10. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
              Paragraph("<b>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
         ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')]),
-        Spacer(1, 6),
+        Spacer(1, 4),
         Table([
             [Paragraph(f"<b>11. Place :</b> {place}<br/><b>Date :</b> {a_date_str}", body_style),
              Paragraph("<b>Signature & Designation of Sanctioning Authority</b><br/>Sanctioned / Not Sanctioned<br/><br/>", right_style)]
@@ -194,9 +177,6 @@ if submitted:
     pdf_doc.build(pdf_elements)
     pdf_bio.seek(0)
 
-    # ==========================================
-    # DISPLAY DOWNLOAD BUTTONS
-    # ==========================================
     st.success("✅ Leave application generated successfully!")
     
     col_dl1, col_dl2 = st.columns(2)
@@ -216,4 +196,3 @@ if submitted:
             mime="application/pdf",
             use_container_width=True
         )
-        
