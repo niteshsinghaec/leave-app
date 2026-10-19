@@ -5,10 +5,17 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
 
+# Imports for PDF Generation
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 st.set_page_config(page_title="Leave App", page_icon="📄", layout="centered")
 
 st.title("🛡️ Officers Leave App")
-st.write("Fill in your details below and download your single-page formatted leave application instantly.")
+st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** format.")
 
 # Form inputs
 with st.form("leave_form"):
@@ -35,7 +42,7 @@ with st.form("leave_form"):
     with col4:
         app_date = st.date_input("Application Date")
 
-    submitted = st.form_submit_button("Generate Leave Application (.docx)")
+    submitted = st.form_submit_button("Generate Leave Application")
 
 if submitted:
     f_date_str = from_date.strftime("%d-%m-%Y")
@@ -45,9 +52,10 @@ if submitted:
     duty_text = duty_arr if duty_arr else "...................................................."
     rem_text = rem_officers if rem_officers else "...................................................."
 
-    # Generate Word Document in Memory
+    # ==========================================
+    # 1. GENERATE DOCX FILE
+    # ==========================================
     doc = docx.Document()
-    
     for section in doc.sections:
         section.top_margin = Inches(0.6)
         section.bottom_margin = Inches(0.6)
@@ -72,13 +80,11 @@ if submitted:
             run.font.size = Pt(font_size)
         return p
 
-    # Title
     add_p("अधिकारियों की छुट्टी के लिए आवेदनपत्र", bold=True, space_after=2, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=13)
     add_p("OFFICERS APPLICATION FOR LEAVE", bold=True, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER, font_size=13)
 
-    # Fields
     add_p(f"1. संख्या/रैंक और नाम:\n    No. Rank and Name :- {rank_name}", bold=True, space_after=6)
-    add_p(f"2. यूनिट :\n    Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83\n              SQAE(GS) Mumbai-83", bold=True, space_after=6)
+    add_p("2. यूनिट :\n    Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83\n              SQAE(GS) Mumbai-83", bold=True, space_after=6)
     add_p(f"3. नियुक्ति :\n    Appoitment :- {appointment}", bold=True, space_after=6)
     add_p(f"4. ड्यूटी के लिए प्रबन्ध :\n    Arrangement for performance of duty : - {duty_text}", bold=True, space_after=6)
     add_p(f"5. शेष अधिकारियों की संख्या : -\n    No. of Officers remaining :- {rem_text}", bold=True, space_after=6)
@@ -140,15 +146,99 @@ if submitted:
     p11_r.paragraph_format.space_after = Pt(2)
     p11_r.add_run("मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम\nSignature & Designation of Sanctioning Authority\nमंजूरी की जाती है / Sanctioned / Not Sanctioned\n\n").bold = True
 
-    bio = io.BytesIO()
-    doc.save(bio)
-    bio.seek(0)
+    docx_bio = io.BytesIO()
+    doc.save(docx_bio)
+    docx_bio.seek(0)
 
-    st.success("✅ Leave application generated successfully!")
-    st.download_button(
-        label="📥 Download Filled Leave Form (.docx)",
-        data=bio,
-        file_name="Filled_Leave_Application.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    # ==========================================
+    # 2. GENERATE PDF FILE
+    # ==========================================
+    pdf_bio = io.BytesIO()
+    pdf_doc = SimpleDocTemplate(
+        pdf_bio,
+        pagesize=A4,
+        rightMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.5*inch
     )
-  
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=12, alignment=1, spaceAfter=2)
+    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=10)
+    body_bold = ParagraphStyle('BodyBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, spaceAfter=6)
+    center_bold = ParagraphStyle('CenterBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=1, spaceAfter=6)
+    right_bold = ParagraphStyle('RightBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, alignment=2, leading=13)
+
+    pdf_elements = []
+
+    pdf_elements.append(Paragraph("अधिकारियों की छुट्टी के लिए आवेदनपत्र", title_style))
+    pdf_elements.append(Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style))
+
+    pdf_elements.append(Paragraph(f"1. संख्या/रैंक और नाम:<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. Rank and Name :- {rank_name}", body_bold))
+    pdf_elements.append(Paragraph("2. यूनिट :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQAE(GS) Mumbai-83", body_bold))
+    pdf_elements.append(Paragraph(f"3. नियुक्ति :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Appoitment :- {appointment}", body_bold))
+    pdf_elements.append(Paragraph(f"4. ड्यूटी के लिए प्रबन्ध :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Arrangement for performance of duty : - {duty_text}", body_bold))
+    pdf_elements.append(Paragraph(f"5. शेष अधिकारियों की संख्या : -<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. of Officers remaining :- {rem_text}", body_bold))
+    
+    p6_text = f"6. वार्षिक / अर्जित / फरलों / बीमारी (Half Pay) / आकस्मिक / प्रतिबंधित / अर्धवेतन छुट्टी जिसके लिए आवेदन दिया गया है<br/>&nbsp;&nbsp;&nbsp;&nbsp;on : {f_date_str} &nbsp;&nbsp; To {t_date_str} &nbsp;&nbsp; No. of days : {no_days}<br/>&nbsp;&nbsp;&nbsp;&nbsp;तक के लिए (दिनों {no_days}) Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]"
+    pdf_elements.append(Paragraph(p6_text, body_bold))
+
+    pdf_elements.append(Paragraph(f"7. छुट्टी के दौरान पता : {address}", body_bold))
+    pdf_elements.append(Paragraph(f"8. कितने दिन की आकस्मिक छुट्टी ली :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_bold))
+
+    # Section 9
+    t9_data = [
+        [Paragraph(f"9. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
+         Paragraph("आवेदक के हस्ताक्षर<br/>Signature of Applicant<br/><br/>", right_bold)]
+    ]
+    t9_pdf = Table(t9_data, colWidths=[3.6*inch, 3.4*inch])
+    t9_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    pdf_elements.append(t9_pdf)
+
+    pdf_elements.append(Paragraph("सिफ़ारिश की जाती है / Recommended", center_bold))
+
+    # Section 10
+    t10_data = [
+        [Paragraph(f"10. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
+         Paragraph("सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority<br/><br/>", right_bold)]
+    ]
+    t10_pdf = Table(t10_data, colWidths=[3.6*inch, 3.4*inch])
+    t10_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    pdf_elements.append(t10_pdf)
+
+    # Section 11
+    t11_data = [
+        [Paragraph(f"11. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख:<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}", body_bold),
+         Paragraph("मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned<br/><br/>", right_bold)]
+    ]
+    t11_pdf = Table(t11_data, colWidths=[3.6*inch, 3.4*inch])
+    t11_pdf.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+    pdf_elements.append(t11_pdf)
+
+    pdf_doc.build(pdf_elements)
+    pdf_bio.seek(0)
+
+    # ==========================================
+    # DISPLAY DOWNLOAD BUTTONS
+    # ==========================================
+    st.success("✅ Leave application generated successfully in DOCX & PDF!")
+    
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+        st.download_button(
+            label="📥 Download Word (.docx)",
+            data=docx_bio,
+            file_name="Filled_Leave_Application.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
+    with col_dl2:
+        st.download_button(
+            label="📄 Download PDF (.pdf)",
+            data=pdf_bio,
+            file_name="Filled_Leave_Application.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+        
