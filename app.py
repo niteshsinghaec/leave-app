@@ -4,21 +4,12 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 import io
-import os
-import urllib.request
-
-# Imports for PDF Generation with Font Support
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from xhtml2pdf import pisa
 
 st.set_page_config(page_title="Leave App", page_icon="📄", layout="centered")
 
 st.title("🛡️ Officers Leave App")
-st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** (Bilingual Hindi & English).")
+st.write("Fill in your details below and download your single-page formatted leave application in **DOCX** or **PDF** (Exact Layout Match).")
 
 # Form inputs
 with st.form("leave_form"):
@@ -154,92 +145,116 @@ if submitted:
     docx_bio.seek(0)
 
     # ==========================================
-    # 2. GENERATE BILINGUAL PDF FILE (Full-Page Stretched Layout)
+    # 2. GENERATE PDF FILE (Exact Layout Match via HTML)
     # ==========================================
-    font_path = "/tmp/NotoSansDevanagari.ttf"
-    if not os.path.exists(font_path):
-        try:
-            url = "https://github.com/google/fonts/raw/true/ofl/notosansdevanagari/NotoSansDevanagari-Regular.ttf"
-            urllib.request.urlretrieve(url, font_path)
-        except Exception:
-            try:
-                url_alt = "https://github.com/google/fonts/raw/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf"
-                urllib.request.urlretrieve(url_alt, font_path)
-            except Exception:
-                pass
+    html_content = f"""
+    <html>
+    <head>
+    <style>
+        @page {{
+            size: A4;
+            margin: 0.5in;
+        }}
+        body {{
+            font-family: Helvetica, sans-serif;
+            font-size: 10.5pt;
+            color: #000;
+            line-height: 1.3;
+        }}
+        .title-hi {{
+            text-align: center;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }}
+        .title-en {{
+            text-align: center;
+            font-size: 11.5pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }}
+        .field {{
+            font-weight: bold;
+            margin-bottom: 10px;
+        }}
+        .subtext {{
+            margin-left: 20px;
+            font-weight: bold;
+        }}
+        .center-heading {{
+            text-align: center;
+            font-weight: bold;
+            margin: 12px 0;
+        }}
+        table {{
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border-collapse: collapse;
+        }}
+        td {{
+            vertical-align: top;
+            font-weight: bold;
+            font-size: 10pt;
+        }}
+        .right-col {{
+            text-align: right;
+        }}
+    </style>
+    </head>
+    <body>
+        <div class="title-hi">अधिकारियों की छुट्टी के लिए आवेदनपत्र</div>
+        <div class="title-en">OFFICERS APPLICATION FOR LEAVE</div>
 
-    if os.path.exists(font_path):
-        pdfmetrics.registerFont(TTFont('HindiFont', font_path))
-        font_name = 'HindiFont'
-    else:
-        font_name = 'Helvetica'
+        <div class="field">1. संख्या/रैंक और नाम:<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. Rank and Name :- {rank_name}</div>
+        <div class="field">2. यूनिट :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Unit :- सामान्य भंडार खंड, व. गु. आ. स्था (सा. भं ), मुंबई -83<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SQAE(GS) Mumbai-83</div>
+        <div class="field">3. नियुक्ति :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Appointment :- {appointment}</div>
+        <div class="field">4. ड्यूटी के लिए प्रबन्ध :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Arrangement for performance of duty : - {duty_text}</div>
+        <div class="field">5. शेष अधिकारियों की संख्या : -<br/>&nbsp;&nbsp;&nbsp;&nbsp;No. of Officers remaining :- {rem_text}</div>
+        <div class="field">6. वार्षिक / अर्जित / फरलों / बीमारी (Half Pay) / आकस्मिक / प्रतिबंधित / अर्धवेतन छुट्टी जिसके लिए आवेदन दिया गया है<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;on : {f_date_str}   To {t_date_str}   No. of days : {no_days}<br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;तक के लिए (दिनों {no_days}) Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]</div>
+        <div class="field">7. छुट्टी के दौरान पता : {address}</div>
+        <div class="field">8. कितने दिन की आकस्मिक छुट्टी ली :<br/>&nbsp;&nbsp;&nbsp;&nbsp;Days of Casual Leave availed :- {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.</div>
+
+        <table>
+            <tr>
+                <td>9. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
+                <td class="right-col">आवेदक के हस्ताक्षर<br/>Signature of Applicant<br/><br/></td>
+            </tr>
+        </table>
+
+        <div class="center-heading">सिफ़ारिश की जाती है</div>
+
+        <table>
+            <tr>
+                <td>10. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
+                <td class="right-col">सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority<br/><br/></td>
+            </tr>
+        </table>
+
+        <table>
+            <tr>
+                <td>11. स्थान : {place} &nbsp;&nbsp;&nbsp;&nbsp;तारीख:<br/>Place : {place} &nbsp;&nbsp;&nbsp;&nbsp;Date : {a_date_str}</td>
+                <td class="right-col">मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned<br/><br/></td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
 
     pdf_bio = io.BytesIO()
-    pdf_doc = SimpleDocTemplate(
-        pdf_bio,
-        pagesize=A4,
-        rightMargin=0.5*inch,
-        leftMargin=0.5*inch,
-        topMargin=0.4*inch,
-        bottomMargin=0.4*inch
-    )
-
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName=font_name, fontSize=12, alignment=1, spaceAfter=2)
-    title_en_style = ParagraphStyle('TitleEnStyle', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=11, alignment=1, spaceAfter=8)
-    
-    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, leading=15, spaceAfter=6)
-    center_style = ParagraphStyle('CenterStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=1, spaceAfter=6)
-    right_style = ParagraphStyle('RightStyle', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=2, leading=13)
-
-    content_rows = [
-        [Paragraph("अधिकारियों की छुट्टी के लिए आवेदनपत्र", title_style)],
-        [Paragraph("OFFICERS APPLICATION FOR LEAVE", title_en_style)],
-        [Paragraph(f"<b>1. संख्या/रैंक और नाम / No. Rank and Name :-</b> {rank_name}", body_style)],
-        [Paragraph("<b>2. यूनिट / Unit :-</b> सामान्य भंडार खंड / SQAE(GS) Mumbai-83", body_style)],
-        [Paragraph(f"<b>3. नियुक्ति / Appointment :-</b> {appointment}", body_style)],
-        [Paragraph(f"<b>4. ड्यूटी के लिए प्रबन्ध / Arrangement for performance of duty :-</b> {duty_text}", body_style)],
-        [Paragraph(f"<b>5. शेष अधिकारियों की संख्या / No. of Officers remaining :-</b> {rem_text}", body_style)],
-        [Paragraph(f"<b>6. वार्षिक / अर्जित / फरलों / बीमारी / आकस्मिक छुट्टी के लिए आवेदन</b><br/>"
-                   f"&nbsp;&nbsp;&nbsp;&nbsp;From : {f_date_str} &nbsp;&nbsp; To : {t_date_str} &nbsp;&nbsp; No. of Days : {no_days}<br/>"
-                   f"&nbsp;&nbsp;&nbsp;&nbsp;Type : Casual / EL / RH / Furlough / Sick / Half Pay [Selected: {leave_type}]", body_style)],
-        [Paragraph(f"<b>7. छुट्टी के दौरान पता / Address during leave :-</b> {address}", body_style)],
-        [Paragraph(f"<b>8. कितने दिन की आकस्मिक छुट्टी ली / Days of Casual Leave availed :-</b> {cl_availed}<br/>&nbsp;&nbsp;&nbsp;&nbsp;Station leave permission may please be granted.", body_style)],
-        
-        [Table([
-            [Paragraph(f"<b>9. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-             Paragraph("<b>आवेदक के हस्ताक्षर<br/>Signature of Applicant</b><br/><br/>", right_style)]
-        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
-        
-        [Paragraph("<b>सिफ़ारिश की जाती है / Recommended</b>", center_style)],
-        
-        [Table([
-            [Paragraph(f"<b>10. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-             Paragraph("<b>सिफ़ारिश करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Recommending Authority</b><br/><br/>", right_style)]
-        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
-        
-        [Table([
-            [Paragraph(f"<b>11. स्थान / Place :</b> {place}<br/><b>तारीख / Date :</b> {a_date_str}", body_style),
-             Paragraph("<b>मंजूर करनेवाले प्राधिकारी के हस्ताक्षर तथा पदनाम<br/>Signature & Designation of Sanctioning Authority<br/>मंजूरी की जाती है / Sanctioned / Not Sanctioned</b><br/><br/>", right_style)]
-        ], colWidths=[3.6*inch, 3.4*inch], style=[('VALIGN', (0,0), (-1,-1), 'TOP')])],
-    ]
-
-    full_page_table = Table(content_rows, colWidths=[7.0*inch], rowHeights=None)
-    full_page_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-    ]))
-
-    pdf_elements = [full_page_table]
-    pdf_doc.build(pdf_elements)
+    pisa_status = pisa.CreatePDF(io.BytesIO(html_content.encode("utf-8")), dest=pdf_bio)
     pdf_bio.seek(0)
 
     # ==========================================
     # DISPLAY DOWNLOAD BUTTONS
     # ==========================================
-    st.success("✅ Leave application generated successfully in bilingual DOCX & PDF!")
-    
+    if not pisa_status.err:
+        st.success("✅ Leave application generated successfully in DOCX & PDF!")
+    else:
+        st.warning("⚠️ Generated with minor PDF warnings, but file is ready.")
+
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
